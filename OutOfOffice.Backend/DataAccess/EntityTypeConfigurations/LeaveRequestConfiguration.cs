@@ -12,7 +12,7 @@ namespace DataAccess.EntityTypeConfigurations
             modelBuilder
                 .HasOne(lr => lr.Employee)
                 .WithMany()
-                .HasForeignKey(lr => lr.EmployeeID);
+                .HasForeignKey(lr => lr.EmployeeId);
         }
     }
 }

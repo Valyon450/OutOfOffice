@@ -9,5 +9,7 @@
         public string Status { get; set; }
         public int PeoplePartnerId { get; set; }
         public int OutOfOfficeBalance { get; set; }
+
+        public EmployeeDTO PeoplePartner { get; set; }
     }
 }

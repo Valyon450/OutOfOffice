@@ -1,15 +1,15 @@
 ﻿using BusinessLogic.Services;
-using DataAccess.Entities;
+using BusinessLogic.DTOs;
 
 namespace BusinessLogic.Interfaces
 {
     public interface IProjectService
     {
-        Task<List<Project>> GetProjectsAsync();
-        Task<Project> GetProjectByIdAsync(int id);
-        Task AddOrUpdateProjectAsync(Project project);
-        Task DeactivateProjectAsync(int id);
-        Task<List<Project>> SearchProjectsAsync(string searchTerm);
-        Task<List<Project>> FilterProjectsAsync(FilterOptions options);
+        Task<List<ProjectDTO>?> GetProjectsAsync(CancellationToken cancellationToken);
+        Task<ProjectDTO?> GetProjectByIdAsync(int id, CancellationToken cancellationToken);
+        Task AddOrUpdateProjectAsync(ProjectDTO project, CancellationToken cancellationToken);
+        Task DeactivateProjectAsync(int id, CancellationToken cancellationToken);
+        Task<List<ProjectDTO>?> SearchProjectsAsync(string searchTerm, CancellationToken cancellationToken);
+        Task<List<ProjectDTO>?> FilterProjectsAsync(FilterOptions options, CancellationToken cancellationToken);
     }
 }

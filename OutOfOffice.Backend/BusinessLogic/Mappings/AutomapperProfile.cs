@@ -8,7 +8,7 @@ namespace BusinessLogic.Mappings
     {
         public AutomapperProfile()
         {
-            CreateMap<Employee, EmployeeDTO>()
+            CreateMap<Employee, EmployeeDTO>()                
                 .ReverseMap();
 
             CreateMap<LeaveRequest, LeaveRequestDTO>()
@@ -19,7 +19,6 @@ namespace BusinessLogic.Mappings
 
             CreateMap<Project, ProjectDTO>()
                 .ReverseMap();
-
         }
     }
 }

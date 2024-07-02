@@ -1,15 +1,15 @@
 ﻿using BusinessLogic.Services;
-using DataAccess.Entities;
+using BusinessLogic.DTOs;
 
 namespace BusinessLogic.Interfaces
 {
     public interface IEmployeeService
     {
-        Task<List<Employee>> GetEmployeesAsync();
-        Task<Employee> GetEmployeeByIdAsync(int id);
-        Task AddOrUpdateEmployeeAsync(Employee employee);
-        Task DeactivateEmployeeAsync(int id);
-        Task<List<Employee>> SearchEmployeesAsync(string searchTerm);
-        Task<List<Employee>> FilterEmployeesAsync(FilterOptions options);
+        Task<List<EmployeeDTO>?> GetEmployeesAsync(CancellationToken cancellationToken);
+        Task<EmployeeDTO?> GetEmployeeByIdAsync(int id, CancellationToken cancellationToken);
+        Task AddOrUpdateEmployeeAsync(EmployeeDTO employee, CancellationToken cancellationToken);
+        Task DeactivateEmployeeAsync(int id, CancellationToken cancellationToken);
+        Task<List<EmployeeDTO>?> SearchEmployeesAsync(string searchTerm, CancellationToken cancellationToken);
+        Task<List<EmployeeDTO>?> FilterEmployeesAsync(FilterOptions options, CancellationToken cancellationToken);
     }
 }

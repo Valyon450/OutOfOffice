@@ -9,5 +9,7 @@
         public int ProjectManagerId { get; set; }
         public string Comment { get; set; }
         public string Status { get; set; }
+
+        public EmployeeDTO ProjectManager { get; set; }
     }
 }

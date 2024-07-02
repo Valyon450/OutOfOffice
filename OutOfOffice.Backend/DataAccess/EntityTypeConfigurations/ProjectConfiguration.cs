@@ -12,7 +12,7 @@ namespace DataAccess.EntityTypeConfigurations
             modelBuilder
                 .HasOne(p => p.ProjectManager)
                 .WithMany()
-                .HasForeignKey(p => p.ProjectManagerID);
+                .HasForeignKey(p => p.ProjectManagerId);
         }
     }
 }

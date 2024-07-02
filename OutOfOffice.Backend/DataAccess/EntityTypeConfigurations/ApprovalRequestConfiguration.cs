@@ -12,7 +12,7 @@ namespace DataAccess.EntityTypeConfigurations
             modelBuilder
                 .HasOne(ar => ar.Approver)
                 .WithMany()
-                .HasForeignKey(ar => ar.ApproverID);
+                .HasForeignKey(ar => ar.ApproverId);
 
             // ApprovalRequest - LeaveRequest relationship
             modelBuilder

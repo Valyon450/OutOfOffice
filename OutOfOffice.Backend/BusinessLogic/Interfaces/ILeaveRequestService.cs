@@ -1,15 +1,15 @@
 ﻿using BusinessLogic.Services;
-using DataAccess.Entities;
+using BusinessLogic.DTOs;
 
 namespace BusinessLogic.Interfaces
 {
     public interface ILeaveRequestService
     {
-        Task<List<LeaveRequest>> GetLeaveRequestsAsync();
-        Task<LeaveRequest> GetLeaveRequestByIdAsync(int id);
-        Task AddOrUpdateLeaveRequestAsync(LeaveRequest request);
-        Task CancelLeaveRequestAsync(int id);
-        Task<List<LeaveRequest>> SearchLeaveRequestsAsync(string searchTerm);
-        Task<List<LeaveRequest>> FilterLeaveRequestsAsync(FilterOptions options);
+        Task<List<LeaveRequestDTO>?> GetLeaveRequestsAsync(CancellationToken cancellationToken);
+        Task<LeaveRequestDTO?> GetLeaveRequestByIdAsync(int id, CancellationToken cancellationToken);
+        Task AddOrUpdateLeaveRequestAsync(LeaveRequestDTO request, CancellationToken cancellationToken);
+        Task CancelLeaveRequestAsync(int id, CancellationToken cancellationToken);
+        Task<List<LeaveRequestDTO>?> SearchLeaveRequestsAsync(string searchTerm, CancellationToken cancellationToken);
+        Task<List<LeaveRequestDTO>?> FilterLeaveRequestsAsync(FilterOptions options, CancellationToken cancellationToken);
     }
 }
