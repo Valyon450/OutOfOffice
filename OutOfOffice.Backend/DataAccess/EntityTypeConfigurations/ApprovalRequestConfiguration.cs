@@ -18,7 +18,7 @@ namespace DataAccess.EntityTypeConfigurations
             modelBuilder
                 .HasOne(ar => ar.LeaveRequest)
                 .WithMany()
-                .HasForeignKey(ar => ar.LeaveRequestID);
+                .HasForeignKey(ar => ar.LeaveRequestId);
         }
     }
 }

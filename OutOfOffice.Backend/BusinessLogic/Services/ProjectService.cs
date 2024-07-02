@@ -19,7 +19,7 @@ namespace BusinessLogic.Services
             _mapper = mapper;
         }
 
-        public async Task<List<ProjectDTO>?> GetProjectsAsync(CancellationToken cancellationToken = default)
+        public async Task<List<ProjectDTO>?> GetProjectsAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<ProjectDTO?> GetProjectByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<ProjectDTO?> GetProjectByIdAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
@@ -45,7 +45,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task AddOrUpdateProjectAsync(ProjectDTO projectDTO, CancellationToken cancellationToken = default)
+        public async Task<bool> AddOrUpdateProjectAsync(ProjectDTO projectDTO, CancellationToken cancellationToken)
         {
             try
             {
@@ -61,31 +61,41 @@ namespace BusinessLogic.Services
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }
         }
 
-        public async Task DeactivateProjectAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<bool> DeactivateProjectAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
                 var project = await _context.Projects.FindAsync(id);
-                if (project != null)
+                if (project == null)
+                {
+                    return false;
+                }
+                else
                 {
                     project.Status = "Inactive"; // Assuming "Inactive" is a valid status
                     await _context.SaveChangesAsync(cancellationToken);
+
+                    return true;
                 }
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }
         }
 
-        public async Task<List<ProjectDTO>?> SearchProjectsAsync(string searchTerm, CancellationToken cancellationToken = default)
+        public async Task<List<ProjectDTO>?> SearchProjectsAsync(string searchTerm, CancellationToken cancellationToken)
         {
             try
             {
@@ -102,7 +112,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<List<ProjectDTO>?> FilterProjectsAsync(FilterOptions options, CancellationToken cancellationToken = default)
+        public async Task<List<ProjectDTO>?> FilterProjectsAsync(FilterOptions options, CancellationToken cancellationToken)
         {
             try
             {

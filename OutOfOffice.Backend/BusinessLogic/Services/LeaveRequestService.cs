@@ -19,7 +19,7 @@ namespace BusinessLogic.Services
             _mapper = mapper;
         }
 
-        public async Task<List<LeaveRequestDTO>?> GetLeaveRequestsAsync(CancellationToken cancellationToken = default)
+        public async Task<List<LeaveRequestDTO>?> GetLeaveRequestsAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<LeaveRequestDTO?> GetLeaveRequestByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<LeaveRequestDTO?> GetLeaveRequestByIdAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
@@ -45,7 +45,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task AddOrUpdateLeaveRequestAsync(LeaveRequestDTO leaveRequestDTO, CancellationToken cancellationToken = default)
+        public async Task<bool> AddOrUpdateLeaveRequestAsync(LeaveRequestDTO leaveRequestDTO, CancellationToken cancellationToken)
         {
             try
             {
@@ -61,31 +61,41 @@ namespace BusinessLogic.Services
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }
         }
 
-        public async Task CancelLeaveRequestAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<bool> CancelLeaveRequestAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
                 var leaveRequest = await _context.LeaveRequests.FindAsync(id);
-                if (leaveRequest != null)
+                if (leaveRequest == null)
+                {
+                    return false;
+                }
+                else
                 {
                     leaveRequest.Status = "Canceled"; // Assuming "Canceled" is a valid status
                     await _context.SaveChangesAsync(cancellationToken);
+
+                    return true;
                 }
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }
         }
 
-        public async Task<List<LeaveRequestDTO>?> SearchLeaveRequestsAsync(string searchTerm, CancellationToken cancellationToken = default)
+        public async Task<List<LeaveRequestDTO>?> SearchLeaveRequestsAsync(string searchTerm, CancellationToken cancellationToken)
         {
             try
             {
@@ -102,7 +112,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<List<LeaveRequestDTO>?> FilterLeaveRequestsAsync(FilterOptions options, CancellationToken cancellationToken = default)
+        public async Task<List<LeaveRequestDTO>?> FilterLeaveRequestsAsync(FilterOptions options, CancellationToken cancellationToken)
         {
             try
             {

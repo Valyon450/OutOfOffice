@@ -19,7 +19,7 @@ namespace BusinessLogic.Services
             _mapper = mapper;
         }
 
-        public async Task<List<EmployeeDTO>?> GetEmployeesAsync(CancellationToken cancellationToken = default)
+        public async Task<List<EmployeeDTO>?> GetEmployeesAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<EmployeeDTO?> GetEmployeeByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<EmployeeDTO?> GetEmployeeByIdAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
@@ -45,7 +45,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task AddOrUpdateEmployeeAsync(EmployeeDTO employeeDTO, CancellationToken cancellationToken = default)
+        public async Task<bool> AddOrUpdateEmployeeAsync(EmployeeDTO employeeDTO, CancellationToken cancellationToken)
         {
             try
             {
@@ -61,31 +61,41 @@ namespace BusinessLogic.Services
                 }                    
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }
         }
 
-        public async Task DeactivateEmployeeAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<bool> DeactivateEmployeeAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
                 var employee = await _context.Employees.FindAsync(id);
-                if (employee != null)
+                if (employee == null)
+                {
+                    return false;
+                }
+                else
                 {
                     employee.Status = "Inactive"; // Assuming "Inactive" is a valid status
                     await _context.SaveChangesAsync(cancellationToken);
+
+                    return true;
                 }
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }
         }
 
-        public async Task<List<EmployeeDTO>?> SearchEmployeesAsync(string searchTerm, CancellationToken cancellationToken = default)
+        public async Task<List<EmployeeDTO>?> SearchEmployeesAsync(string searchTerm, CancellationToken cancellationToken)
         {
             try
             {
@@ -101,7 +111,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<List<EmployeeDTO>?> FilterEmployeesAsync(FilterOptions options, CancellationToken cancellationToken = default)
+        public async Task<List<EmployeeDTO>?> FilterEmployeesAsync(FilterOptions options, CancellationToken cancellationToken)
         {
             try
             {

@@ -17,7 +17,7 @@ namespace BusinessLogic.Services
             _mapper = mapper;
         }
 
-        public async Task<List<ApprovalRequestDTO>?> GetApprovalRequestsAsync(CancellationToken cancellationToken = default)
+        public async Task<List<ApprovalRequestDTO>?> GetApprovalRequestsAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -30,7 +30,7 @@ namespace BusinessLogic.Services
             }            
         }
 
-        public async Task<ApprovalRequestDTO?> GetApprovalRequestByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<ApprovalRequestDTO?> GetApprovalRequestByIdAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
@@ -43,42 +43,55 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task ApproveRequestAsync(int approvalRequestId, CancellationToken cancellationToken = default)
+        public async Task<bool> ApproveRequestAsync(int approvalRequestId, CancellationToken cancellationToken)
         {
             try
             {
                 var approvalRequest = await _context.ApprovalRequests.FindAsync(approvalRequestId);
-                if (approvalRequest != null)
+
+                if (approvalRequest == null)
+                {
+                    return false;
+                }
+                else
                 {
                     approvalRequest.Status = "Approved"; // Assuming "Approved" is a valid status
                     await _context.SaveChangesAsync(cancellationToken);
+                    return true;
                 }
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }
         }
 
-        public async Task RejectRequestAsync(int approvalRequestId, string rejectionReason, CancellationToken cancellationToken = default)
+        public async Task<bool> RejectRequestAsync(int approvalRequestId, string rejectionReason, CancellationToken cancellationToken)
         {
             try
             {
                 var approvalRequest = await _context.ApprovalRequests.FindAsync(approvalRequestId);
-                if (approvalRequest != null)
+                if (approvalRequest == null)
+                {
+                    return false;
+                }
+                else
                 {
                     approvalRequest.Status = "Rejected"; // Assuming "Rejected" is a valid status
                     approvalRequest.Comment = rejectionReason;
                     await _context.SaveChangesAsync(cancellationToken);
+                    return true;
                 }
             }
             catch (OperationCanceledException)
             {
                 // Handle the cancellation of the operation
+                return false;
             }            
         }
 
-        public async Task<List<ApprovalRequestDTO>?> SearchApprovalRequestsAsync(string searchTerm, CancellationToken cancellationToken = default)
+        public async Task<List<ApprovalRequestDTO>?> SearchApprovalRequestsAsync(string searchTerm, CancellationToken cancellationToken)
         {
             try
             {
@@ -94,7 +107,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<List<ApprovalRequestDTO>?> FilterApprovalRequestsAsync(FilterOptions options, CancellationToken cancellationToken = default)
+        public async Task<List<ApprovalRequestDTO>?> FilterApprovalRequestsAsync(FilterOptions options, CancellationToken cancellationToken)
         {
             try
             {
