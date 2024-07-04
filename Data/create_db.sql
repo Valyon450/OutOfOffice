@@ -6,46 +6,46 @@ GO
 
 USE OutOfOffice;
 
-CREATE TABLE Employees (
-    ID INT PRIMARY KEY IDENTITY(1,1),
+CREATE TABLE Employee (
+    Id INT PRIMARY KEY IDENTITY(1,1),
     FullName NVARCHAR(255) NOT NULL,
     Subdivision NVARCHAR(255) NOT NULL,
     Position NVARCHAR(255) NOT NULL,
     Status NVARCHAR(50) NOT NULL,
-    PeoplePartner INT,
+    PeoplePartnerId INT,
     OutOfOfficeBalance INT NOT NULL,
     Photo VARBINARY(MAX),
-    FOREIGN KEY (PeoplePartner) REFERENCES Employees(ID)
+    FOREIGN KEY (PeoplePartnerId) REFERENCES Employee(Id)
 );
 
-CREATE TABLE LeaveRequests (
-    ID INT PRIMARY KEY IDENTITY(1,1),
-    Employee INT,
+CREATE TABLE LeaveRequest (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    EmployeeId INT,
     AbsenceReason NVARCHAR(255) NOT NULL,
     StartDate DATE NOT NULL,
     EndDate DATE NOT NULL,
     Comment NVARCHAR(MAX),
     Status NVARCHAR(50) DEFAULT 'New',
-    FOREIGN KEY (Employee) REFERENCES Employees(ID)
+    FOREIGN KEY (EmployeeId) REFERENCES Employee(Id)
 );
 
 CREATE TABLE ApprovalRequests (
-    ID INT PRIMARY KEY IDENTITY(1,1),
-    Approver INT,
-    LeaveRequest INT,
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    ApproverId INT,
+    LeaveRequestId INT,
     Status NVARCHAR(50) DEFAULT 'New',
     Comment NVARCHAR(MAX),
-    FOREIGN KEY (Approver) REFERENCES Employees(ID),
-    FOREIGN KEY (LeaveRequest) REFERENCES LeaveRequests(ID)
+    FOREIGN KEY (ApproverId) REFERENCES Employee(Id),
+    FOREIGN KEY (LeaveRequestId) REFERENCES LeaveRequest(Id)
 );
 
-CREATE TABLE Projects (
-    ID INT PRIMARY KEY IDENTITY(1,1),
+CREATE TABLE Project (
+    Id INT PRIMARY KEY IDENTITY(1,1),
     ProjectType NVARCHAR(255) NOT NULL,
     StartDate DATE NOT NULL,
     EndDate DATE,
-    ProjectManager INT,
+    ProjectManagerId INT,
     Comment NVARCHAR(MAX),
     Status NVARCHAR(50) NOT NULL,
-    FOREIGN KEY (ProjectManager) REFERENCES Employees(ID)
+    FOREIGN KEY (ProjectManagerId) REFERENCES Employee(Id)
 );
