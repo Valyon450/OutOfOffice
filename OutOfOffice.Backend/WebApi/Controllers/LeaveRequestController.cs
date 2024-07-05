@@ -1,6 +1,7 @@
 ﻿using BusinessLogic.DTOs;
 using BusinessLogic.Interfaces;
-using BusinessLogic.Services;
+using BusinessLogic.Options;
+using BusinessLogic.Requests;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -47,9 +48,24 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddOrUpdateLeaveRequest([FromBody] LeaveRequestDTO leaveRequestDTO, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateLeaveRequest([FromBody] CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
         {
-            bool success = await _leaveRequestService.AddOrUpdateLeaveRequestAsync(leaveRequestDTO, cancellationToken);
+            int id = await _leaveRequestService.CreateLeaveRequestAsync(request, cancellationToken);
+
+            if (id != 0)
+            {
+                return CreatedAtAction(nameof(GetLeaveRequestById), new { id }, request);
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateLeaveRequest(int id, [FromBody] CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
+        {
+            bool success = await _leaveRequestService.UpdateLeaveRequestAsync(id, request, cancellationToken);
 
             if (success)
             {
@@ -61,10 +77,25 @@ namespace WebApi.Controllers
             }
         }
 
-        [HttpPost("{id}/cancel")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> CancelLeaveRequest(int id, CancellationToken cancellationToken)
         {
             bool success = await _leaveRequestService.CancelLeaveRequestAsync(id, cancellationToken);
+
+            if (success)
+            {
+                return NoContent();
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteLeaveRequest(int id, CancellationToken cancellationToken)
+        {
+            bool success = await _leaveRequestService.DeleteLeaveRequestAsync(id, cancellationToken);
 
             if (success)
             {
@@ -91,7 +122,7 @@ namespace WebApi.Controllers
             }            
         }
 
-        [HttpPost("filter")]
+        [HttpGet("filter")]
         public async Task<ActionResult<List<LeaveRequestDTO>>> FilterLeaveRequests([FromBody] FilterOptions options, CancellationToken cancellationToken)
         {
             var leaveRequests = await _leaveRequestService.FilterLeaveRequestsAsync(options, cancellationToken);

@@ -1,4 +1,4 @@
-﻿namespace BusinessLogic.Services
+﻿namespace BusinessLogic.Options
 {
     public class FilterOptions
     {

@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DataAccess.Interfaces;
 using BusinessLogic.DTOs;
+using BusinessLogic.Options;
+using BusinessLogic.Requests;
+using DataAccess.Entities;
 
 namespace BusinessLogic.Services
 {
@@ -40,6 +43,54 @@ namespace BusinessLogic.Services
             catch (OperationCanceledException)
             {
                 return null;
+            }
+        }
+
+        public async Task<int> CreateApprovalRequestAsync(CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                // TODO: Validation
+
+                var approvalRequest = _mapper.Map<ApprovalRequest>(request);
+
+                _context.ApprovalRequests.Add(approvalRequest);
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return approvalRequest.Id;
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return 0;
+            }
+        }
+
+        public async Task<bool> UpdateApprovalRequestAsync(int id, CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var existingApprovalRequest = await _context.ApprovalRequests.FindAsync(id);
+
+                if (existingApprovalRequest == null)
+                {
+                    return false; // Approval request not found
+                }
+
+                // Map the updated properties from the request to the existing approval request
+                _mapper.Map(request, existingApprovalRequest);
+
+                // TODO: Validation
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return false;
             }
         }
 
@@ -89,6 +140,29 @@ namespace BusinessLogic.Services
                 // Handle the cancellation of the operation
                 return false;
             }            
+        }
+
+        public async Task<bool> DeleteApprovalRequestAsync(int id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var approvalRequest = await _context.ApprovalRequests.FindAsync(id);
+
+                if (approvalRequest == null)
+                {
+                    return false; // Approval request not found
+                }
+
+                _context.ApprovalRequests.Remove(approvalRequest);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return false;
+            }
         }
 
         public async Task<List<ApprovalRequestDTO>?> SearchApprovalRequestsAsync(string searchTerm, CancellationToken cancellationToken)

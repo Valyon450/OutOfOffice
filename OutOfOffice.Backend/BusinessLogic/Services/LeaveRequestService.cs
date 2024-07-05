@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using BusinessLogic.DTOs;
 using DataAccess.Interfaces;
+using BusinessLogic.Options;
+using BusinessLogic.Requests;
 
 namespace BusinessLogic.Services
 {
@@ -45,20 +47,42 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<bool> AddOrUpdateLeaveRequestAsync(LeaveRequestDTO leaveRequestDTO, CancellationToken cancellationToken)
+        public async Task<int> CreateLeaveRequestAsync(CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
         {
             try
             {
-                var leaveRequest = _mapper.Map<LeaveRequest>(leaveRequestDTO);
+                // TODO: Validation
 
-                if (leaveRequestDTO.Id == 0)
+                var leaveRequest = _mapper.Map<LeaveRequest>(request);
+
+                _context.LeaveRequests.Add(leaveRequest);
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return leaveRequest.Id;
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return 0;
+            }
+        }
+
+        public async Task<bool> UpdateLeaveRequestAsync(int id, CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var existingLeaveRequest = await _context.LeaveRequests.FindAsync(id);
+
+                if (existingLeaveRequest == null)
                 {
-                    _context.LeaveRequests.Add(leaveRequest);
+                    return false; // Approval request not found
                 }
-                else
-                {
-                    _context.LeaveRequests.Update(leaveRequest);
-                }
+
+                // Map the updated properties from the request to the existing approval request
+                _mapper.Map(request, existingLeaveRequest);
+
+                // TODO: Validation
 
                 await _context.SaveChangesAsync(cancellationToken);
 
@@ -87,6 +111,29 @@ namespace BusinessLogic.Services
 
                     return true;
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteLeaveRequestAsync(int id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+
+                if (leaveRequest == null)
+                {
+                    return false; // Approval request not found
+                }
+
+                _context.LeaveRequests.Remove(leaveRequest);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
             }
             catch (OperationCanceledException)
             {

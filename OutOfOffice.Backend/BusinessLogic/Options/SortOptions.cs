@@ -1,10 +1,10 @@
 ﻿using Microsoft.Data.SqlClient;
 
-namespace BusinessLogic.Services
+namespace BusinessLogic.Options
 {
     public class SortOptions
     {
-        public string SortBy { get; set; } 
+        public string SortBy { get; set; }
         public SortOrder SortOrder { get; set; }
     }
 

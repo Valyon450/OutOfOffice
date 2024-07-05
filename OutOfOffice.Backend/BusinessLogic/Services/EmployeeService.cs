@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DataAccess.Interfaces;
 using BusinessLogic.DTOs;
+using BusinessLogic.Options;
+using BusinessLogic.Requests;
 
 namespace BusinessLogic.Services
 {
@@ -45,20 +47,42 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<bool> AddOrUpdateEmployeeAsync(EmployeeDTO employeeDTO, CancellationToken cancellationToken)
+        public async Task<int> CreateEmployeeAsync(CreateOrUpdateEmployee request, CancellationToken cancellationToken)
         {
             try
             {
-                var employee = _mapper.Map<Employee>(employeeDTO);
+                // TODO: Validation
 
-                if (employeeDTO.Id == 0)
-                {                    
-                    _context.Employees.Add(employee);
-                }                    
-                else
+                var employee = _mapper.Map<Employee>(request);
+
+                _context.Employees.Add(employee);
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return employee.Id;
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return 0;
+            }
+        }
+
+        public async Task<bool> UpdateEmployeeAsync(int id, CreateOrUpdateEmployee request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var existingEmployee = await _context.Employees.FindAsync(id);
+
+                if (existingEmployee == null)
                 {
-                    _context.Employees.Update(employee);
-                }                    
+                    return false; // Approval request not found
+                }
+
+                // Map the updated properties from the request to the existing approval request
+                _mapper.Map(request, existingEmployee);
+
+                // TODO: Validation
 
                 await _context.SaveChangesAsync(cancellationToken);
 
@@ -87,6 +111,29 @@ namespace BusinessLogic.Services
 
                     return true;
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteEmployeeAsync(int id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var employee = await _context.Employees.FindAsync(id);
+
+                if (employee == null)
+                {
+                    return false; // Approval request not found
+                }
+
+                _context.Employees.Remove(employee);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
             }
             catch (OperationCanceledException)
             {

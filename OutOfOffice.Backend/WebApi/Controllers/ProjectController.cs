@@ -1,6 +1,7 @@
 ﻿using BusinessLogic.DTOs;
 using BusinessLogic.Interfaces;
-using BusinessLogic.Services;
+using BusinessLogic.Options;
+using BusinessLogic.Requests;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -47,9 +48,24 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddOrUpdateProject([FromBody] ProjectDTO projectDTO, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateProject([FromBody] CreateOrUpdateProject request, CancellationToken cancellationToken)
         {
-            bool success = await _projectService.AddOrUpdateProjectAsync(projectDTO, cancellationToken);
+            int id = await _projectService.CreateProjectAsync(request, cancellationToken);
+
+            if (id != 0)
+            {
+                return CreatedAtAction(nameof(GetProjectById), new { id }, request);
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProject(int id, [FromBody] CreateOrUpdateProject request, CancellationToken cancellationToken)
+        {
+            bool success = await _projectService.UpdateProjectAsync(id, request, cancellationToken);
 
             if (success)
             {
@@ -61,10 +77,25 @@ namespace WebApi.Controllers
             }
         }
 
-        [HttpPost("{id}/deactivate")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> DeactivateProject(int id, CancellationToken cancellationToken)
         {
             bool success = await _projectService.DeactivateProjectAsync(id, cancellationToken);
+
+            if (success)
+            {
+                return NoContent();
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProject(int id, CancellationToken cancellationToken)
+        {
+            bool success = await _projectService.DeleteProjectAsync(id, cancellationToken);
 
             if (success)
             {
@@ -91,7 +122,7 @@ namespace WebApi.Controllers
             }            
         }
 
-        [HttpPost("filter")]
+        [HttpGet("filter")]
         public async Task<ActionResult<List<ProjectDTO>>> FilterProjects([FromBody] FilterOptions options, CancellationToken cancellationToken)
         {
             var projects = await _projectService.FilterProjectsAsync(options, cancellationToken);

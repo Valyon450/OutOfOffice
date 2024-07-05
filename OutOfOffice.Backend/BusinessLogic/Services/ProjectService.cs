@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DataAccess.Interfaces;
 using BusinessLogic.DTOs;
+using BusinessLogic.Options;
+using BusinessLogic.Requests;
 
 namespace BusinessLogic.Services
 {
@@ -45,20 +47,42 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<bool> AddOrUpdateProjectAsync(ProjectDTO projectDTO, CancellationToken cancellationToken)
+        public async Task<int> CreateProjectAsync(CreateOrUpdateProject request, CancellationToken cancellationToken)
         {
             try
             {
-                var project = _mapper.Map<Project>(projectDTO);
+                // TODO: Validation
 
-                if (projectDTO.Id == 0)
+                var project = _mapper.Map<Project>(request);
+
+                _context.Projects.Add(project);
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return project.Id;
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return 0;
+            }
+        }
+
+        public async Task<bool> UpdateProjectAsync(int id, CreateOrUpdateProject request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var existingproject = await _context.Projects.FindAsync(id);
+
+                if (existingproject == null)
                 {
-                    _context.Projects.Add(project);
+                    return false; // Approval request not found
                 }
-                else
-                {
-                    _context.Projects.Update(project);
-                }
+
+                // Map the updated properties from the request to the existing approval request
+                _mapper.Map(request, existingproject);
+
+                // TODO: Validation
 
                 await _context.SaveChangesAsync(cancellationToken);
 
@@ -69,7 +93,7 @@ namespace BusinessLogic.Services
                 // Handle the cancellation of the operation
                 return false;
             }
-        }
+        }        
 
         public async Task<bool> DeactivateProjectAsync(int id, CancellationToken cancellationToken)
         {
@@ -87,6 +111,29 @@ namespace BusinessLogic.Services
 
                     return true;
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle the cancellation of the operation
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteProjectAsync(int id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var project = await _context.Projects.FindAsync(id);
+
+                if (project == null)
+                {
+                    return false; // Approval request not found
+                }
+
+                _context.Projects.Remove(project);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return true;
             }
             catch (OperationCanceledException)
             {

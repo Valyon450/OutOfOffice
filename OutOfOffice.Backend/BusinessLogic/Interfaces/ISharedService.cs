@@ -1,4 +1,4 @@
-﻿using BusinessLogic.Services;
+﻿using BusinessLogic.Options;
 
 namespace BusinessLogic.Interfaces
 {

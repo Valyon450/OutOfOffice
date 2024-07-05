@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using BusinessLogic.DTOs;
+using BusinessLogic.Requests;
 using DataAccess.Entities;
 
 namespace BusinessLogic.Mappings
@@ -8,17 +9,21 @@ namespace BusinessLogic.Mappings
     {
         public AutomapperProfile()
         {
-            CreateMap<Employee, EmployeeDTO>()                
+            CreateMap<Employee, EmployeeDTO>()
                 .ReverseMap();
+            CreateMap<CreateOrUpdateEmployee, Employee>();
 
             CreateMap<LeaveRequest, LeaveRequestDTO>()
                 .ReverseMap();
+            CreateMap<CreateOrUpdateLeaveRequest, LeaveRequest>();
 
             CreateMap<ApprovalRequest, ApprovalRequestDTO>()
                 .ReverseMap();
+            CreateMap<CreateOrUpdateApprovalRequest, ApprovalRequest>();
 
             CreateMap<Project, ProjectDTO>()
                 .ReverseMap();
+            CreateMap<CreateOrUpdateProject, Project>();
         }
     }
 }

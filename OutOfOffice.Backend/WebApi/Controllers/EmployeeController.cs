@@ -1,6 +1,7 @@
 ﻿using BusinessLogic.DTOs;
 using BusinessLogic.Interfaces;
-using BusinessLogic.Services;
+using BusinessLogic.Options;
+using BusinessLogic.Requests;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -47,9 +48,24 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddOrUpdateEmployee([FromBody] EmployeeDTO employeeDTO, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateEmployee([FromBody] CreateOrUpdateEmployee request, CancellationToken cancellationToken)
         {
-            bool success = await _employeeService.AddOrUpdateEmployeeAsync(employeeDTO, cancellationToken);
+            int id = await _employeeService.CreateEmployeeAsync(request, cancellationToken);
+
+            if (id != 0)
+            {
+                return CreatedAtAction(nameof(GetEmployeeById), new { id }, request);
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] CreateOrUpdateEmployee request, CancellationToken cancellationToken)
+        {
+            bool success = await _employeeService.UpdateEmployeeAsync(id, request, cancellationToken);
 
             if (success)
             {
@@ -61,7 +77,7 @@ namespace WebApi.Controllers
             }
         }
 
-        [HttpPost("{id}/deactivate")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> DeactivateEmployee(int id, CancellationToken cancellationToken)
         {
             bool success = await _employeeService.DeactivateEmployeeAsync(id, cancellationToken);
@@ -74,6 +90,21 @@ namespace WebApi.Controllers
             {
                 return BadRequest();
             }            
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteEmployee(int id, CancellationToken cancellationToken)
+        {
+            bool success = await _employeeService.DeleteEmployeeAsync(id, cancellationToken);
+
+            if (success)
+            {
+                return NoContent();
+            }
+            else
+            {
+                return BadRequest();
+            }
         }
 
         [HttpGet("search")]
@@ -91,7 +122,7 @@ namespace WebApi.Controllers
             }            
         }
 
-        [HttpPost("filter")]
+        [HttpGet("filter")]
         public async Task<ActionResult<List<EmployeeDTO>>> FilterEmployees([FromBody] FilterOptions options, CancellationToken cancellationToken)
         {
             var employees = await _employeeService.FilterEmployeesAsync(options, cancellationToken);
