@@ -1,6 +1,6 @@
 ﻿using BusinessLogic.Options;
 
-namespace BusinessLogic.Interfaces
+namespace BusinessLogic.Services.Interfaces
 {
     public interface ISharedService
     {

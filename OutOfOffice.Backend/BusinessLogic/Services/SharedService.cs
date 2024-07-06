@@ -1,5 +1,5 @@
-﻿using BusinessLogic.Interfaces;
-using BusinessLogic.Options;
+﻿using BusinessLogic.Options;
+using BusinessLogic.Services.Interfaces;
 using Microsoft.Data.SqlClient;
 
 namespace BusinessLogic.Services

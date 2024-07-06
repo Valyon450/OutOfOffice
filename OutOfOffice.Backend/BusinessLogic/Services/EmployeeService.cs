@@ -1,12 +1,14 @@
-﻿using BusinessLogic.Interfaces;
-using DataAccess.Entities;
-using DataAccess;
+﻿using DataAccess.Entities;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DataAccess.Interfaces;
 using BusinessLogic.DTOs;
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+using BusinessLogic.Services.Interfaces;
+using BusinessLogic.ValidationServices.Interfaces;
 
 namespace BusinessLogic.Services
 {
@@ -14,22 +16,27 @@ namespace BusinessLogic.Services
     {
         private readonly IOutOfOfficeDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IEmployeeValidationService _employeeValidationService;
+        private readonly ILogger<EmployeeService> _logger;
 
-        public EmployeeService(OutOfOfficeDbContext context, IMapper mapper)
+        public EmployeeService(IOutOfOfficeDbContext context, IMapper mapper, IEmployeeValidationService employeeValidationService, ILogger<EmployeeService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _employeeValidationService = employeeValidationService;
+            _logger = logger;
         }
 
         public async Task<List<EmployeeDTO>?> GetEmployeesAsync(CancellationToken cancellationToken)
         {
             try
             {
-                var employees = await _context.Employees.ToListAsync(cancellationToken);
+                var employees = await _context.Employee.ToListAsync(cancellationToken);
                 return _mapper.Map<List<EmployeeDTO>>(employees);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while fetching employees");
                 return null;
             }
         }
@@ -38,12 +45,19 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var employee = await _context.Employees.FindAsync(id, cancellationToken);
+                var employee = await _context.Employee.FindAsync(new object[] { id }, cancellationToken);
+
+                if (employee == null)
+                {
+                    throw new Exception($"Employee with Id: {id} not found.");
+                }
+
                 return _mapper.Map<EmployeeDTO>(employee);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                return null;
+                _logger.LogError(ex, $"Error occurred while fetching employee with Id: {id}");
+                throw;
             }
         }
 
@@ -51,94 +65,98 @@ namespace BusinessLogic.Services
         {
             try
             {
-                // TODO: Validation
+                var validationResult = await _employeeValidationService.ValidateAsync(request);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
+                }
 
                 var employee = _mapper.Map<Employee>(request);
 
-                _context.Employees.Add(employee);
+                _context.Employee.Add(employee);
 
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return employee.Id;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return 0;
+                _logger.LogError(ex, "Error occurred while creating an employee");
+                throw;
             }
         }
 
-        public async Task<bool> UpdateEmployeeAsync(int id, CreateOrUpdateEmployee request, CancellationToken cancellationToken)
+        public async Task UpdateEmployeeAsync(int id, CreateOrUpdateEmployee request, CancellationToken cancellationToken)
         {
             try
             {
-                var existingEmployee = await _context.Employees.FindAsync(id);
+                var existingEmployee = await _context.Employee.FindAsync(new object[] { id }, cancellationToken);
 
                 if (existingEmployee == null)
                 {
-                    return false; // Approval request not found
+                    throw new Exception($"Employee with Id: {id} not found.");
                 }
 
-                // Map the updated properties from the request to the existing approval request
+                var validationResult = await _employeeValidationService.ValidateAsync(request);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
+                }
+
+                // Map the updated properties from the request to the existing employee
                 _mapper.Map(request, existingEmployee);
 
-                // TODO: Validation
-
                 await _context.SaveChangesAsync(cancellationToken);
-
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while updating employee with Id: {id}");
+                throw;
             }
         }
 
-        public async Task<bool> DeactivateEmployeeAsync(int id, CancellationToken cancellationToken)
+        public async Task DeactivateEmployeeAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var employee = await _context.Employees.FindAsync(id);
+                var employee = await _context.Employee.FindAsync(new object[] { id }, cancellationToken);
+
                 if (employee == null)
                 {
-                    return false;
+                    throw new Exception($"Employee with Id: {id} not found.");
                 }
-                else
-                {
-                    employee.Status = "Inactive"; // Assuming "Inactive" is a valid status
-                    await _context.SaveChangesAsync(cancellationToken);
 
-                    return true;
-                }
+                employee.Status = "Inactive"; // Assuming "Inactive" is a valid status
+                await _context.SaveChangesAsync(cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while deactivating employee with Id: {id}");
+                throw;
             }
         }
 
-        public async Task<bool> DeleteEmployeeAsync(int id, CancellationToken cancellationToken)
+        public async Task DeleteEmployeeAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var employee = await _context.Employees.FindAsync(id);
+                var employee = await _context.Employee.FindAsync(new object[] { id }, cancellationToken);
 
                 if (employee == null)
                 {
-                    return false; // Approval request not found
+                    throw new Exception($"Employee with Id: {id} not found.");
                 }
 
-                _context.Employees.Remove(employee);
+                _context.Employee.Remove(employee);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while deleting employee with Id: {id}");
+                throw;
             }
         }
 
@@ -146,14 +164,15 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var employees = await _context.Employees
-                                        .Where(e => e.FullName.Contains(searchTerm))
-                                        .ToListAsync(cancellationToken);
+                var employees = await _context.Employee
+                    .Where(e => e.FullName.Contains(searchTerm))
+                    .ToListAsync(cancellationToken);
 
                 return _mapper.Map<List<EmployeeDTO>>(employees);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while searching for employees");
                 return null;
             }
         }
@@ -162,19 +181,20 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var query = _context.Employees.AsQueryable();
+                var query = _context.Employee.AsQueryable();
 
-                if (options.IsActive.HasValue)
-                    query = query.Where(e => e.Status == (options.IsActive.Value ? "Active" : "Inactive"));
+                if (options.Status != null)
+                    query = query.Where(e => e.Status == options.Status);
 
-                // TODO: Add more filters based on options
+                //TODO Add more filters based on options
 
                 var employees = await query.ToListAsync(cancellationToken);
 
                 return _mapper.Map<List<EmployeeDTO>>(employees);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while filtering employees");
                 return null;
             }
         }

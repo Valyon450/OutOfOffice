@@ -7,10 +7,10 @@ namespace DataAccess
 {
     public class OutOfOfficeDbContext : DbContext, IOutOfOfficeDbContext
     {
-        public DbSet<Employee> Employees { get; set; }
-        public DbSet<LeaveRequest> LeaveRequests { get; set; }
-        public DbSet<ApprovalRequest> ApprovalRequests { get; set; }
-        public DbSet<Project> Projects { get; set; }
+        public DbSet<Employee> Employee { get; set; }
+        public DbSet<LeaveRequest> LeaveRequest { get; set; }
+        public DbSet<ApprovalRequest> ApprovalRequest { get; set; }
+        public DbSet<Project> Project { get; set; }
 
         public OutOfOfficeDbContext(DbContextOptions<OutOfOfficeDbContext> options) : base(options)
         {

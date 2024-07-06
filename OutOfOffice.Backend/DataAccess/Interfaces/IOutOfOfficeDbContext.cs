@@ -5,10 +5,10 @@ namespace DataAccess.Interfaces
 {
     public interface IOutOfOfficeDbContext
     {
-        DbSet<Employee> Employees { get; }
-        DbSet<LeaveRequest> LeaveRequests { get; }
-        DbSet<ApprovalRequest> ApprovalRequests { get; }
-        DbSet<Project> Projects { get; }
+        DbSet<Employee> Employee { get; }
+        DbSet<LeaveRequest> LeaveRequest { get; }
+        DbSet<ApprovalRequest> ApprovalRequest { get; }
+        DbSet<Project> Project { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

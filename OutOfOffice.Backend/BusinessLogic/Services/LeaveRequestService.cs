@@ -1,12 +1,14 @@
-﻿using BusinessLogic.Interfaces;
-using DataAccess.Entities;
-using DataAccess;
+﻿using DataAccess.Entities;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using BusinessLogic.DTOs;
 using DataAccess.Interfaces;
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+using BusinessLogic.Services.Interfaces;
+using BusinessLogic.ValidationServices.Interfaces;
 
 namespace BusinessLogic.Services
 {
@@ -14,22 +16,27 @@ namespace BusinessLogic.Services
     {
         private readonly IOutOfOfficeDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ILeaveRequestValidationService _leaveRequestValidationService;
+        private readonly ILogger<LeaveRequestService> _logger;
 
-        public LeaveRequestService(OutOfOfficeDbContext context, IMapper mapper)
+        public LeaveRequestService(IOutOfOfficeDbContext context, IMapper mapper, ILeaveRequestValidationService leaveRequestValidationService, ILogger<LeaveRequestService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _leaveRequestValidationService = leaveRequestValidationService;
+            _logger = logger;
         }
 
         public async Task<List<LeaveRequestDTO>?> GetLeaveRequestsAsync(CancellationToken cancellationToken)
         {
             try
             {
-                var leaveRequests = await _context.LeaveRequests.ToListAsync(cancellationToken);
+                var leaveRequests = await _context.LeaveRequest.ToListAsync(cancellationToken);
                 return _mapper.Map<List<LeaveRequestDTO>>(leaveRequests);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while fetching leave requests");
                 return null;
             }
         }
@@ -38,12 +45,19 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var leaveRequest = await _context.LeaveRequests.FindAsync(id, cancellationToken);
+                var leaveRequest = await _context.LeaveRequest.FindAsync(new object[] { id }, cancellationToken);
+
+                if (leaveRequest == null)
+                {
+                    throw new Exception($"Leave Request with Id: {id} not found.");
+                }
+
                 return _mapper.Map<LeaveRequestDTO>(leaveRequest);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                return null;
+                _logger.LogError(ex, $"Error occurred while fetching leave request with Id: {id}");
+                throw;
             }
         }
 
@@ -51,94 +65,97 @@ namespace BusinessLogic.Services
         {
             try
             {
-                // TODO: Validation
+                var validationResult = await _leaveRequestValidationService.ValidateAsync(request);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
+                }
 
                 var leaveRequest = _mapper.Map<LeaveRequest>(request);
 
-                _context.LeaveRequests.Add(leaveRequest);
+                _context.LeaveRequest.Add(leaveRequest);
 
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return leaveRequest.Id;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return 0;
+                _logger.LogError(ex, "Error occurred while creating a leave request");
+                throw;
             }
         }
 
-        public async Task<bool> UpdateLeaveRequestAsync(int id, CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
+        public async Task UpdateLeaveRequestAsync(int id, CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
         {
             try
             {
-                var existingLeaveRequest = await _context.LeaveRequests.FindAsync(id);
+                var existingLeaveRequest = await _context.LeaveRequest.FindAsync(new object[] { id }, cancellationToken);
 
                 if (existingLeaveRequest == null)
                 {
-                    return false; // Approval request not found
+                    throw new Exception($"Leave Request with Id: {id} not found.");
                 }
 
-                // Map the updated properties from the request to the existing approval request
+                var validationResult = await _leaveRequestValidationService.ValidateAsync(request);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
+                }
+
+                // Map the updated properties from the request to the existing leave request
                 _mapper.Map(request, existingLeaveRequest);
 
-                // TODO: Validation
-
                 await _context.SaveChangesAsync(cancellationToken);
-
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while updating leave request with Id: {id}");
+                throw;
             }
         }
 
-        public async Task<bool> CancelLeaveRequestAsync(int id, CancellationToken cancellationToken)
+        public async Task CancelLeaveRequestAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+                var leaveRequest = await _context.LeaveRequest.FindAsync(new object[] { id }, cancellationToken);
+
                 if (leaveRequest == null)
                 {
-                    return false;
+                    throw new Exception($"Leave Request with Id: {id} not found.");
                 }
-                else
-                {
-                    leaveRequest.Status = "Canceled"; // Assuming "Canceled" is a valid status
-                    await _context.SaveChangesAsync(cancellationToken);
 
-                    return true;
-                }
+                leaveRequest.Status = "Canceled"; // Assuming "Canceled" is a valid status
+                await _context.SaveChangesAsync(cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while canceling leave request with Id: {id}");
+                throw;
             }
         }
 
-        public async Task<bool> DeleteLeaveRequestAsync(int id, CancellationToken cancellationToken)
+        public async Task DeleteLeaveRequestAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+                var leaveRequest = await _context.LeaveRequest.FindAsync(new object[] { id }, cancellationToken);
 
                 if (leaveRequest == null)
                 {
-                    return false; // Approval request not found
+                    throw new Exception($"Leave Request with Id: {id} not found.");
                 }
 
-                _context.LeaveRequests.Remove(leaveRequest);
+                _context.LeaveRequest.Remove(leaveRequest);
                 await _context.SaveChangesAsync(cancellationToken);
-
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while deleting leave request with Id: {id}");
+                throw;
             }
         }
 
@@ -146,15 +163,15 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var leaveRequests = await _context.LeaveRequests
-                                        .Where(lr => lr.Id.ToString()
-                                        .Contains(searchTerm))
-                                        .ToListAsync(cancellationToken);
+                var leaveRequests = await _context.LeaveRequest
+                    .Where(lr => lr.AbsenceReason.Contains(searchTerm))
+                    .ToListAsync(cancellationToken);
 
                 return _mapper.Map<List<LeaveRequestDTO>>(leaveRequests);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while searching for leave requests");
                 return null;
             }
         }
@@ -163,21 +180,22 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var query = _context.LeaveRequests.AsQueryable();
+                var query = _context.LeaveRequest.AsQueryable();
 
                 if (options.Status != null)
                     query = query.Where(lr => lr.Status == options.Status);
 
-                // TODO: Add more filters based on options
+                //TODO Add more filters based on options
 
                 var leaveRequests = await query.ToListAsync(cancellationToken);
 
                 return _mapper.Map<List<LeaveRequestDTO>>(leaveRequests);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while filtering leave requests");
                 return null;
             }
-        }
+        }    
     }
 }

@@ -1,7 +1,7 @@
 ﻿using BusinessLogic.DTOs;
-using BusinessLogic.Interfaces;
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
+using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -35,90 +35,90 @@ namespace WebApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ApprovalRequestDTO>> GetApprovalRequestById(int id, CancellationToken cancellationToken)
         {
-            var approvalRequest = await _approvalRequestService.GetApprovalRequestByIdAsync(id, cancellationToken);
+            try
+            {
+                var approvalRequest = await _approvalRequestService.GetApprovalRequestByIdAsync(id, cancellationToken);
 
-            if (approvalRequest == null)
-            {
-                return NotFound();
-            }
-            else
-            {
                 return Ok(approvalRequest);
-            }            
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateApprovalRequest([FromBody] CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
         {
-            int id = await _approvalRequestService.CreateApprovalRequestAsync(request, cancellationToken);
-
-            if (id > 0)
+            try
             {
+                int id = await _approvalRequestService.CreateApprovalRequestAsync(request, cancellationToken);
+
                 return CreatedAtAction(nameof(GetApprovalRequestById), new { id }, request);
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateApprovalRequest(int id, [FromBody] CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
         {
-            bool success = await _approvalRequestService.UpdateApprovalRequestAsync(id, request, cancellationToken);
-
-            if (success)
+            try
             {
+                await _approvalRequestService.UpdateApprovalRequestAsync(id, request, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPatch("{id}/approve")]
         public async Task<IActionResult> ApproveRequest(int id, CancellationToken cancellationToken)
         {
-            bool success = await _approvalRequestService.ApproveRequestAsync(id, cancellationToken);
-
-            if (success)
+            try
             {
+                await _approvalRequestService.ApproveRequestAsync(id, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
-            }            
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPatch("{id}/reject")]
         public async Task<IActionResult> RejectRequest(int id, [FromBody] string rejectionReason, CancellationToken cancellationToken)
         {
-            bool success = await _approvalRequestService.RejectRequestAsync(id, rejectionReason, cancellationToken);
-
-            if (success)
+            try
             {
+                await _approvalRequestService.RejectRequestAsync(id, rejectionReason, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteApprovalRequest(int id, CancellationToken cancellationToken)
         {
-            bool success = await _approvalRequestService.DeleteApprovalRequestAsync(id, cancellationToken);
-
-            if (success)
+            try
             {
+                await _approvalRequestService.DeleteApprovalRequestAsync(id, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 

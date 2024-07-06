@@ -1,7 +1,7 @@
 ﻿using BusinessLogic.DTOs;
-using BusinessLogic.Interfaces;
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
+using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -35,75 +35,75 @@ namespace WebApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<LeaveRequestDTO>> GetLeaveRequestById(int id, CancellationToken cancellationToken)
         {
-            var leaveRequest = await _leaveRequestService.GetLeaveRequestByIdAsync(id, cancellationToken);
+            try
+            {
+                var leaveRequest = await _leaveRequestService.GetLeaveRequestByIdAsync(id, cancellationToken);
 
-            if (leaveRequest == null)
-            {
-                return NotFound();
-            }
-            else
-            {
                 return Ok(leaveRequest);
-            }            
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateLeaveRequest([FromBody] CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
         {
-            int id = await _leaveRequestService.CreateLeaveRequestAsync(request, cancellationToken);
-
-            if (id != 0)
+            try
             {
+                int id = await _leaveRequestService.CreateLeaveRequestAsync(request, cancellationToken);
+
                 return CreatedAtAction(nameof(GetLeaveRequestById), new { id }, request);
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateLeaveRequest(int id, [FromBody] CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken)
         {
-            bool success = await _leaveRequestService.UpdateLeaveRequestAsync(id, request, cancellationToken);
-
-            if (success)
+            try
             {
+                await _leaveRequestService.UpdateLeaveRequestAsync(id, request, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPatch("{id}")]
         public async Task<IActionResult> CancelLeaveRequest(int id, CancellationToken cancellationToken)
         {
-            bool success = await _leaveRequestService.CancelLeaveRequestAsync(id, cancellationToken);
-
-            if (success)
+            try
             {
+                await _leaveRequestService.CancelLeaveRequestAsync(id, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLeaveRequest(int id, CancellationToken cancellationToken)
         {
-            bool success = await _leaveRequestService.DeleteLeaveRequestAsync(id, cancellationToken);
-
-            if (success)
+            try
             {
+                await _leaveRequestService.DeleteLeaveRequestAsync(id, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 

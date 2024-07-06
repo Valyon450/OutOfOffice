@@ -1,12 +1,14 @@
-﻿using BusinessLogic.Interfaces;
-using DataAccess.Entities;
-using DataAccess;
+﻿using DataAccess.Entities;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DataAccess.Interfaces;
 using BusinessLogic.DTOs;
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+using BusinessLogic.Services.Interfaces;
+using BusinessLogic.ValidationServices.Interfaces;
 
 namespace BusinessLogic.Services
 {
@@ -14,22 +16,27 @@ namespace BusinessLogic.Services
     {
         private readonly IOutOfOfficeDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IProjectValidationService _projectValidationService;
+        private readonly ILogger<IProjectService> _logger;
 
-        public ProjectService(OutOfOfficeDbContext context, IMapper mapper)
+        public ProjectService(IOutOfOfficeDbContext context, IMapper mapper, IProjectValidationService projectValidationService, ILogger<ProjectService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _projectValidationService = projectValidationService;
+            _logger = logger;
         }
 
         public async Task<List<ProjectDTO>?> GetProjectsAsync(CancellationToken cancellationToken)
         {
             try
             {
-                var projects = await _context.Projects.ToListAsync(cancellationToken);
+                var projects = await _context.Project.ToListAsync(cancellationToken);
                 return _mapper.Map<List<ProjectDTO>>(projects);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while getting projects.");
                 return null;
             }
         }
@@ -38,12 +45,19 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var project = await _context.Projects.FindAsync(id, cancellationToken);
+                var project = await _context.Project.FindAsync(new object[] { id }, cancellationToken);
+
+                if (project == null)
+                {
+                    throw new Exception($"Project with Id: {id} not found.");
+                }
+
                 return _mapper.Map<ProjectDTO>(project);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                return null;
+                _logger.LogError(ex, $"Error occurred while getting project by Id: {id}");
+                throw;
             }
         }
 
@@ -51,94 +65,98 @@ namespace BusinessLogic.Services
         {
             try
             {
-                // TODO: Validation
+                var validationResult = await _projectValidationService.ValidateAsync(request);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
+                }
 
                 var project = _mapper.Map<Project>(request);
 
-                _context.Projects.Add(project);
+                _context.Project.Add(project);
 
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return project.Id;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return 0;
+                _logger.LogError(ex, "Error occurred while creating a project.");
+                throw;
             }
         }
 
-        public async Task<bool> UpdateProjectAsync(int id, CreateOrUpdateProject request, CancellationToken cancellationToken)
+        public async Task UpdateProjectAsync(int id, CreateOrUpdateProject request, CancellationToken cancellationToken)
         {
             try
             {
-                var existingproject = await _context.Projects.FindAsync(id);
+                var existingProject = await _context.Project.FindAsync(new object[] { id }, cancellationToken);
 
-                if (existingproject == null)
+                if (existingProject == null)
                 {
-                    return false; // Approval request not found
+                    throw new Exception($"Project with Id: {id} not found.");
                 }
 
-                // Map the updated properties from the request to the existing approval request
-                _mapper.Map(request, existingproject);
+                var validationResult = await _projectValidationService.ValidateAsync(request);
 
-                // TODO: Validation
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
+                }
+
+                // Map the updated properties from the request to the existing project
+                _mapper.Map(request, existingProject);
 
                 await _context.SaveChangesAsync(cancellationToken);
-
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while updating project with Id: {id}");
+                throw;
             }
         }        
 
-        public async Task<bool> DeactivateProjectAsync(int id, CancellationToken cancellationToken)
+        public async Task DeactivateProjectAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var project = await _context.Projects.FindAsync(id);
+                var project = await _context.Project.FindAsync(new object[] { id }, cancellationToken);
+
                 if (project == null)
                 {
-                    return false;
+                    throw new Exception($"Project with Id: {id} not found.");
                 }
-                else
-                {
-                    project.Status = "Inactive"; // Assuming "Inactive" is a valid status
-                    await _context.SaveChangesAsync(cancellationToken);
 
-                    return true;
-                }
+                project.Status = "Inactive";
+            
+                await _context.SaveChangesAsync(cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while deactivating project with Id: {id}");
+                throw;
             }
         }
 
-        public async Task<bool> DeleteProjectAsync(int id, CancellationToken cancellationToken)
+        public async Task DeleteProjectAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var project = await _context.Projects.FindAsync(id);
+                var project = await _context.Project.FindAsync(new object[] { id }, cancellationToken);
 
                 if (project == null)
                 {
-                    return false; // Approval request not found
+                    throw new Exception($"Project with Id: {id} not found.");
                 }
-
-                _context.Projects.Remove(project);
+                
+                _context.Project.Remove(project);
                 await _context.SaveChangesAsync(cancellationToken);
-
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while deleting project with Id: {id}");
+                throw;
             }
         }
 
@@ -146,15 +164,15 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var projects = await _context.Projects
-                                            .Where(p => p.Id.ToString()
-                                            .Contains(searchTerm))
-                                            .ToListAsync(cancellationToken);
+                var projects = await _context.Project
+                    .Where(p => p.Id.ToString().Contains(searchTerm))
+                    .ToListAsync(cancellationToken);
 
                 return _mapper.Map<List<ProjectDTO>>(projects);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, $"Error occurred while searching projects with term: {searchTerm}");
                 return null;
             }
         }
@@ -163,7 +181,7 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var query = _context.Projects.AsQueryable();
+                var query = _context.Project.AsQueryable();
 
                 if (options.Status != null)
                     query = query.Where(p => p.Status == options.Status);
@@ -174,8 +192,9 @@ namespace BusinessLogic.Services
 
                 return _mapper.Map<List<ProjectDTO>>(projects);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while filtering projects.");
                 return null;
             }
         }

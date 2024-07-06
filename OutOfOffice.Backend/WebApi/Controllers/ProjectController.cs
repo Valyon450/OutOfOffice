@@ -1,7 +1,7 @@
 ﻿using BusinessLogic.DTOs;
-using BusinessLogic.Interfaces;
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
+using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -35,75 +35,75 @@ namespace WebApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectDTO>> GetProjectById(int id, CancellationToken cancellationToken)
         {
-            var project = await _projectService.GetProjectByIdAsync(id, cancellationToken);
+            try
+            {
+                var project = await _projectService.GetProjectByIdAsync(id, cancellationToken);
 
-            if (project == null)
-            {
-                return NotFound();
-            }
-            else
-            {
                 return Ok(project);
-            }            
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateProject([FromBody] CreateOrUpdateProject request, CancellationToken cancellationToken)
         {
-            int id = await _projectService.CreateProjectAsync(request, cancellationToken);
-
-            if (id != 0)
+            try
             {
+                int id = await _projectService.CreateProjectAsync(request, cancellationToken);
+
                 return CreatedAtAction(nameof(GetProjectById), new { id }, request);
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProject(int id, [FromBody] CreateOrUpdateProject request, CancellationToken cancellationToken)
         {
-            bool success = await _projectService.UpdateProjectAsync(id, request, cancellationToken);
-
-            if (success)
+            try
             {
+                await _projectService.UpdateProjectAsync(id, request, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPatch("{id}")]
         public async Task<IActionResult> DeactivateProject(int id, CancellationToken cancellationToken)
         {
-            bool success = await _projectService.DeactivateProjectAsync(id, cancellationToken);
-
-            if (success)
+            try
             {
+                await _projectService.DeactivateProjectAsync(id, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(int id, CancellationToken cancellationToken)
         {
-            bool success = await _projectService.DeleteProjectAsync(id, cancellationToken);
-
-            if (success)
+            try
             {
+                await _projectService.DeleteProjectAsync(id, cancellationToken);
+
                 return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.Message);
             }
         }
 

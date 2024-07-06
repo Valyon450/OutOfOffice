@@ -1,11 +1,14 @@
-﻿using BusinessLogic.Interfaces;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using DataAccess.Interfaces;
 using BusinessLogic.DTOs;
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
 using DataAccess.Entities;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+using BusinessLogic.Services.Interfaces;
+using BusinessLogic.ValidationServices.Interfaces;
 
 namespace BusinessLogic.Services
 {
@@ -13,36 +16,48 @@ namespace BusinessLogic.Services
     {
         private readonly IOutOfOfficeDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IApprovalRequestValidationService _approvalRequestValidationService;
+        private readonly ILogger<ApprovalRequestService> _logger;
 
-        public ApprovalRequestService(IOutOfOfficeDbContext context, IMapper mapper)
+        public ApprovalRequestService(IOutOfOfficeDbContext context, IMapper mapper, IApprovalRequestValidationService approvalRequestValidationService, ILogger<ApprovalRequestService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _approvalRequestValidationService = approvalRequestValidationService;
+            _logger = logger;
         }
 
         public async Task<List<ApprovalRequestDTO>?> GetApprovalRequestsAsync(CancellationToken cancellationToken)
         {
             try
             {
-                var approvalRequests = await _context.ApprovalRequests.ToListAsync(cancellationToken);
+                var approvalRequests = await _context.ApprovalRequest.ToListAsync(cancellationToken);
                 return _mapper.Map<List<ApprovalRequestDTO>>(approvalRequests);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while fetching approval requests");
                 return null;
-            }            
+            }
         }
 
         public async Task<ApprovalRequestDTO?> GetApprovalRequestByIdAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var approvalRequest = await _context.ApprovalRequests.FindAsync(id, cancellationToken);
+                var approvalRequest = await _context.ApprovalRequest.FindAsync(new object[] { id }, cancellationToken);
+
+                if (approvalRequest == null)
+                {
+                    throw new Exception($"Approval request with Id: {id} not found.");
+                }
+
                 return _mapper.Map<ApprovalRequestDTO>(approvalRequest);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                return null;
+                _logger.LogError(ex, $"Error occurred while fetching approval request with Id: {id}");
+                throw;
             }
         }
 
@@ -50,118 +65,119 @@ namespace BusinessLogic.Services
         {
             try
             {
-                // TODO: Validation
+                var validationResult = await _approvalRequestValidationService.ValidateAsync(request);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
+                }
 
                 var approvalRequest = _mapper.Map<ApprovalRequest>(request);
 
-                _context.ApprovalRequests.Add(approvalRequest);
+                _context.ApprovalRequest.Add(approvalRequest);
 
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return approvalRequest.Id;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return 0;
+                _logger.LogError(ex, "Error occurred while creating an approval request");
+                throw;
             }
         }
 
-        public async Task<bool> UpdateApprovalRequestAsync(int id, CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
+        public async Task UpdateApprovalRequestAsync(int id, CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
         {
             try
             {
-                var existingApprovalRequest = await _context.ApprovalRequests.FindAsync(id);
+                var existingApprovalRequest = await _context.ApprovalRequest.FindAsync(new object[] { id }, cancellationToken);
 
                 if (existingApprovalRequest == null)
                 {
-                    return false; // Approval request not found
+                    throw new Exception($"Approval request with Id: {id} not found.");
+                }
+
+                var validationResult = await _approvalRequestValidationService.ValidateAsync(request);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new ValidationException(validationResult.Errors);
                 }
 
                 // Map the updated properties from the request to the existing approval request
                 _mapper.Map(request, existingApprovalRequest);
 
-                // TODO: Validation
-
                 await _context.SaveChangesAsync(cancellationToken);
-
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while updating approval request with Id: {id}");
+                throw;
             }
         }
 
-        public async Task<bool> ApproveRequestAsync(int approvalRequestId, CancellationToken cancellationToken)
+        public async Task ApproveRequestAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
-                var approvalRequest = await _context.ApprovalRequests.FindAsync(approvalRequestId);
+                var approvalRequest = await _context.ApprovalRequest.FindAsync(new object[] { id }, cancellationToken);
 
                 if (approvalRequest == null)
                 {
-                    return false;
-                }
-                else
-                {
-                    approvalRequest.Status = "Approved"; // Assuming "Approved" is a valid status
-                    await _context.SaveChangesAsync(cancellationToken);
-                    return true;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Handle the cancellation of the operation
-                return false;
-            }
-        }
-
-        public async Task<bool> RejectRequestAsync(int approvalRequestId, string rejectionReason, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var approvalRequest = await _context.ApprovalRequests.FindAsync(approvalRequestId);
-                if (approvalRequest == null)
-                {
-                    return false;
-                }
-                else
-                {
-                    approvalRequest.Status = "Rejected"; // Assuming "Rejected" is a valid status
-                    approvalRequest.Comment = rejectionReason;
-                    await _context.SaveChangesAsync(cancellationToken);
-                    return true;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Handle the cancellation of the operation
-                return false;
-            }            
-        }
-
-        public async Task<bool> DeleteApprovalRequestAsync(int id, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var approvalRequest = await _context.ApprovalRequests.FindAsync(id);
-
-                if (approvalRequest == null)
-                {
-                    return false; // Approval request not found
+                    throw new Exception($"Approval request with Id: {id} not found.");
                 }
 
-                _context.ApprovalRequests.Remove(approvalRequest);
+                approvalRequest.Status = "Approved"; // Assuming "Approved" is a valid status
                 await _context.SaveChangesAsync(cancellationToken);
-
-                return true;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                // Handle the cancellation of the operation
-                return false;
+                _logger.LogError(ex, $"Error occurred while approving request with Id: {id}");
+                throw;
+            }
+        }
+
+        public async Task RejectRequestAsync(int id, string rejectionReason, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var approvalRequest = await _context.ApprovalRequest.FindAsync(new object[] { id }, cancellationToken);
+
+                if (approvalRequest == null)
+                {
+                    throw new Exception($"Approval request with Id: {id} not found.");
+                }
+
+                approvalRequest.Status = "Rejected"; // Assuming "Rejected" is a valid status
+                approvalRequest.Comment = rejectionReason;
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error occurred while rejecting request with Id: {id}");
+                throw;
+            }
+        }
+
+        public async Task DeleteApprovalRequestAsync(int id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var approvalRequest = await _context.ApprovalRequest.FindAsync(new object[] { id }, cancellationToken);
+
+                if (approvalRequest == null)
+                {
+                    throw new Exception($"Approval request with Id: {id} not found.");
+                }
+
+                _context.ApprovalRequest.Remove(approvalRequest);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error occurred while deleting approval request with Id: {id}");
+                throw;
             }
         }
 
@@ -169,14 +185,15 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var approvalRequests = await _context.ApprovalRequests
-                .Where(ar => ar.Id.ToString().Contains(searchTerm))
-                .ToListAsync(cancellationToken);
+                var approvalRequests = await _context.ApprovalRequest
+                    .Where(ar => ar.Id.ToString().Contains(searchTerm))
+                    .ToListAsync(cancellationToken);
 
                 return _mapper.Map<List<ApprovalRequestDTO>>(approvalRequests);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while searching for approval requests");
                 return null;
             }
         }
@@ -185,7 +202,7 @@ namespace BusinessLogic.Services
         {
             try
             {
-                var query = _context.ApprovalRequests.AsQueryable();
+                var query = _context.ApprovalRequest.AsQueryable();
 
                 if (options.Status != null)
                     query = query.Where(ar => ar.Status == options.Status);
@@ -194,10 +211,11 @@ namespace BusinessLogic.Services
 
                 var approvalRequests = await query.ToListAsync(cancellationToken);
 
-                return _mapper.Map<List<ApprovalRequestDTO>>(query);
+                return _mapper.Map<List<ApprovalRequestDTO>>(approvalRequests);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while filtering approval requests");
                 return null;
             }
         }
