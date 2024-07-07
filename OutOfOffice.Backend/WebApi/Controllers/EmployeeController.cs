@@ -77,12 +77,27 @@ namespace WebApi.Controllers
             }
         }
 
-        [HttpPatch("{id}")]
-        public async Task<IActionResult> DeactivateEmployee(int id, CancellationToken cancellationToken)
+        [HttpPatch("{id}/activation")]
+        public async Task<IActionResult> ActivateOrDeactivateEmployee(int id, CancellationToken cancellationToken)
         {
             try
             {
-                await _employeeService.DeactivateEmployeeAsync(id, cancellationToken);
+                await _employeeService.ActivateOrDeactivateEmployeeAsync(id, cancellationToken);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch("{id}/project")]
+        public async Task<IActionResult> AssignEmployeeToProject(int id, int projectId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _employeeService.AssignEmployeeToProjectAsync(id, projectId, cancellationToken);
 
                 return NoContent();
             }

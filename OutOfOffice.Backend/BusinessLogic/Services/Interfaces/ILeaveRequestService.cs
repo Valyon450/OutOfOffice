@@ -10,7 +10,7 @@ namespace BusinessLogic.Services.Interfaces
         Task<LeaveRequestDTO?> GetLeaveRequestByIdAsync(int id, CancellationToken cancellationToken);
         Task<int> CreateLeaveRequestAsync(CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken);
         Task UpdateLeaveRequestAsync(int id, CreateOrUpdateLeaveRequest request, CancellationToken cancellationToken);
-        Task CancelLeaveRequestAsync(int id, CancellationToken cancellationToken);
+        Task SubmitOrCancelLeaveRequestAsync(int id, CancellationToken cancellationToken);
         Task DeleteLeaveRequestAsync(int id, CancellationToken cancellationToken);
         Task<List<LeaveRequestDTO>?> SearchLeaveRequestsAsync(string searchTerm, CancellationToken cancellationToken);
         Task<List<LeaveRequestDTO>?> FilterLeaveRequestsAsync(FilterOptions options, CancellationToken cancellationToken);

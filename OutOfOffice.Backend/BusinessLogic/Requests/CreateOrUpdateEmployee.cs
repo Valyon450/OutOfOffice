@@ -7,6 +7,7 @@
         public string? Position { get; set; } = default;
         public string? Status { get; set; } = default;
         public int PeoplePartnerId { get; set; } = default;
+        public int ProjectId { get; set; } = default;
         public int OutOfOfficeBalance { get; set; } = default; 
     }
 }

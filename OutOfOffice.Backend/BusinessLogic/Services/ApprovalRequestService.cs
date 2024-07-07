@@ -78,11 +78,13 @@ namespace BusinessLogic.Services
 
                 await _context.SaveChangesAsync(cancellationToken);
 
+                _logger.LogInformation($"Approval request with Id: {approvalRequest.Id} has been created successfully.");
+
                 return approvalRequest.Id;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while creating an approval request");
+                _logger.LogError(ex, "Error occurred while creating an approval request.");
                 throw;
             }
         }
@@ -109,10 +111,12 @@ namespace BusinessLogic.Services
                 _mapper.Map(request, existingApprovalRequest);
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Approval request with Id: {id} has been updated successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while updating approval request with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while updating approval request with Id: {id}.");
                 throw;
             }
         }
@@ -128,12 +132,34 @@ namespace BusinessLogic.Services
                     throw new Exception($"Approval request with Id: {id} not found.");
                 }
 
-                approvalRequest.Status = "Approved"; // Assuming "Approved" is a valid status
+                var leaveRequest = await _context.LeaveRequest.FindAsync(new object[] { approvalRequest.LeaveRequestId }, cancellationToken);
+                if (leaveRequest == null)
+                {
+                    throw new Exception($"Related leave request with Id: {approvalRequest.LeaveRequestId} not found.");
+                }
+
+                approvalRequest.Status = "Approved";
+                leaveRequest.Status = "Approved";
+
+                // Перерахунок балансу відсутності
+                var employee = await _context.Employee.FindAsync(new object[] { leaveRequest.EmployeeId }, cancellationToken);
+                if (employee == null)
+                {
+                    throw new Exception($"Related employee with Id: {leaveRequest.EmployeeId} not found.");
+                }
+
+                int absenceDays = (int) (leaveRequest.EndDate - leaveRequest.StartDate).TotalDays + 1; // Add 1 to include the end day
+
+                // Оновлення балансу відсутності
+                employee.OutOfOfficeBalance += absenceDays;
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Leave request with Id: {approvalRequest.LeaveRequestId} has been approved successfully. Approval request Id: {id}.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while approving request with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while approving request with Id: {id}.");
                 throw;
             }
         }
@@ -149,13 +175,23 @@ namespace BusinessLogic.Services
                     throw new Exception($"Approval request with Id: {id} not found.");
                 }
 
-                approvalRequest.Status = "Rejected"; // Assuming "Rejected" is a valid status
+                var leaveRequest = await _context.LeaveRequest.FindAsync(new object[] { approvalRequest.LeaveRequestId }, cancellationToken);
+                if (leaveRequest == null)
+                {
+                    throw new Exception($"Related leave request with Id: {approvalRequest.LeaveRequestId} not found.");
+                }
+
+                approvalRequest.Status = "Rejected";
                 approvalRequest.Comment = rejectionReason;
+                leaveRequest.Status = "Rejected";
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Leave request with Id: {approvalRequest.LeaveRequestId} has been rejected successfully. Approval request Id: {id}.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while rejecting request with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while rejecting request with Id: {id}.");
                 throw;
             }
         }
@@ -172,11 +208,14 @@ namespace BusinessLogic.Services
                 }
 
                 _context.ApprovalRequest.Remove(approvalRequest);
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Approval request with Id: {id} has been deleted successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while deleting approval request with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while deleting approval request with Id: {id}.");
                 throw;
             }
         }
@@ -193,7 +232,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while searching for approval requests");
+                _logger.LogError(ex, "Error occurred while searching for approval requests.");
                 return null;
             }
         }
@@ -215,7 +254,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while filtering approval requests");
+                _logger.LogError(ex, "Error occurred while filtering approval requests.");
                 return null;
             }
         }

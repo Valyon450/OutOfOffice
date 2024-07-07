@@ -56,7 +56,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while getting project by Id: {id}");
+                _logger.LogError(ex, $"Error occurred while getting project by Id: {id}.");
                 throw;
             }
         }
@@ -77,6 +77,8 @@ namespace BusinessLogic.Services
                 _context.Project.Add(project);
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Project with Id: {project.Id} has been created successfully.");
 
                 return project.Id;
             }
@@ -109,15 +111,17 @@ namespace BusinessLogic.Services
                 _mapper.Map(request, existingProject);
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Project with Id: {id} has been updated successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while updating project with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while updating project with Id: {id}.");
                 throw;
             }
         }        
 
-        public async Task DeactivateProjectAsync(int id, CancellationToken cancellationToken)
+        public async Task ActivateOrDeactivateProjectAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
@@ -128,13 +132,22 @@ namespace BusinessLogic.Services
                     throw new Exception($"Project with Id: {id} not found.");
                 }
 
-                project.Status = "Inactive";
-            
+                if (project.Status == "Active")
+                {
+                    project.Status = "Inactive";
+                }
+                else
+                {
+                    project.Status = "Active";
+                }
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Project with Id: {id} get activation change successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while deactivating project with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while deactivating project with Id: {id}.");
                 throw;
             }
         }
@@ -151,7 +164,10 @@ namespace BusinessLogic.Services
                 }
                 
                 _context.Project.Remove(project);
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Project with Id: {id} has been deleted successfully.");
             }
             catch (Exception ex)
             {
@@ -172,7 +188,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while searching projects with term: {searchTerm}");
+                _logger.LogError(ex, $"Error occurred while searching projects with term: {searchTerm}.");
                 return null;
             }
         }

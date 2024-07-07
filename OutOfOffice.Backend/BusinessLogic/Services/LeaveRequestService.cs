@@ -17,13 +17,15 @@ namespace BusinessLogic.Services
         private readonly IOutOfOfficeDbContext _context;
         private readonly IMapper _mapper;
         private readonly ILeaveRequestValidationService _leaveRequestValidationService;
+        private readonly IApprovalRequestService _approvalRequestService;
         private readonly ILogger<LeaveRequestService> _logger;
 
-        public LeaveRequestService(IOutOfOfficeDbContext context, IMapper mapper, ILeaveRequestValidationService leaveRequestValidationService, ILogger<LeaveRequestService> logger)
+        public LeaveRequestService(IOutOfOfficeDbContext context, IMapper mapper, ILeaveRequestValidationService leaveRequestValidationService, IApprovalRequestService approvalRequestService, ILogger<LeaveRequestService> logger)
         {
             _context = context;
             _mapper = mapper;
             _leaveRequestValidationService = leaveRequestValidationService;
+            _approvalRequestService = approvalRequestService;
             _logger = logger;
         }
 
@@ -36,7 +38,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while fetching leave requests");
+                _logger.LogError(ex, "Error occurred while fetching leave requests.");
                 return null;
             }
         }
@@ -56,7 +58,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while fetching leave request with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while fetching leave request with Id: {id}.");
                 throw;
             }
         }
@@ -78,11 +80,13 @@ namespace BusinessLogic.Services
 
                 await _context.SaveChangesAsync(cancellationToken);
 
+                _logger.LogInformation($"Leave request with Id: {leaveRequest.Id} has been created successfully.");
+
                 return leaveRequest.Id;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while creating a leave request");
+                _logger.LogError(ex, "Error occurred while creating a leave request.");
                 throw;
             }
         }
@@ -109,6 +113,8 @@ namespace BusinessLogic.Services
                 _mapper.Map(request, existingLeaveRequest);
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Leave request with Id: {id} has been updated successfully.");
             }
             catch (Exception ex)
             {
@@ -117,7 +123,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task CancelLeaveRequestAsync(int id, CancellationToken cancellationToken)
+        public async Task SubmitOrCancelLeaveRequestAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
@@ -128,8 +134,47 @@ namespace BusinessLogic.Services
                     throw new Exception($"Leave Request with Id: {id} not found.");
                 }
 
-                leaveRequest.Status = "Canceled"; // Assuming "Canceled" is a valid status
+                if (leaveRequest.Status == "New" || leaveRequest.Status == "Canceled")
+                {
+                    leaveRequest.Status = "Submitted";
+
+                    var employee = await _context.Employee.FindAsync(new object[] { leaveRequest.EmployeeId }, cancellationToken);
+
+                    if (employee == null)
+                    {
+                        throw new Exception($"Related employee with Id: {leaveRequest.EmployeeId} not found.");
+                    }
+
+                    if (employee.PeoplePartnerId == null)
+                    {
+                        throw new Exception($"HR Manager not assigned for employee with Id: {leaveRequest.EmployeeId}.");
+                    }
+
+                    int HRManagerId = (int)employee.PeoplePartnerId;
+
+                    var approvalRequest = new CreateOrUpdateApprovalRequest
+                    {
+                        ApproverId = HRManagerId,
+                        LeaveRequestId = leaveRequest.Id,
+                        Status = "New"
+                    };
+
+                    await _approvalRequestService.CreateApprovalRequestAsync(approvalRequest, cancellationToken);
+                }
+                else if (leaveRequest.Status == "Submitted")
+                {
+                    leaveRequest.Status = "Canceled";
+
+                    var approvalRequests = await _context.ApprovalRequest
+                        .Where(ar => ar.LeaveRequestId == leaveRequest.Id)
+                        .ToListAsync(cancellationToken);
+
+                    _context.ApprovalRequest.RemoveRange(approvalRequests);
+                }                
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Leave request with Id: {id} get status change successfully. Status: {leaveRequest.Status}");
             }
             catch (Exception ex)
             {
@@ -150,7 +195,10 @@ namespace BusinessLogic.Services
                 }
 
                 _context.LeaveRequest.Remove(leaveRequest);
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Leave request with Id: {id} has been deleted successfully.");
             }
             catch (Exception ex)
             {
@@ -171,7 +219,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while searching for leave requests");
+                _logger.LogError(ex, "Error occurred while searching for leave requests.");
                 return null;
             }
         }
@@ -193,7 +241,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while filtering leave requests");
+                _logger.LogError(ex, "Error occurred while filtering leave requests.");
                 return null;
             }
         }    

@@ -1,6 +1,4 @@
-﻿using DataAccess.Entities;
-
-namespace BusinessLogic.DTOs
+﻿namespace BusinessLogic.DTOs
 {
     public class LeaveRequestDTO
     {
@@ -10,8 +8,6 @@ namespace BusinessLogic.DTOs
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }
         public string? Comment { get; set; }
-        public string Status { get; set; } = "New";
-
-        public Employee? Employee { get; set; }
+        public required string Status { get; set; }
     }
 }

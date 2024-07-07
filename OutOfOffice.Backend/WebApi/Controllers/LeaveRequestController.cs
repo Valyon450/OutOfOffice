@@ -78,11 +78,11 @@ namespace WebApi.Controllers
         }
 
         [HttpPatch("{id}")]
-        public async Task<IActionResult> CancelLeaveRequest(int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> SubmitOrCancelLeaveRequest(int id, CancellationToken cancellationToken)
         {
             try
             {
-                await _leaveRequestService.CancelLeaveRequestAsync(id, cancellationToken);
+                await _leaveRequestService.SubmitOrCancelLeaveRequestAsync(id, cancellationToken);
 
                 return NoContent();
             }

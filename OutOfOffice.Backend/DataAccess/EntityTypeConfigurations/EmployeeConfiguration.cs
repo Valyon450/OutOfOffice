@@ -12,7 +12,7 @@ namespace DataAccess.EntityTypeConfigurations
             modelBuilder
                 .HasOne(e => e.PeoplePartner)
                 .WithMany()
-                .HasForeignKey(e => e.PeoplePartnerId)
+                .HasForeignKey(e => e.PeoplePartnerId)                
                 .OnDelete(DeleteBehavior.Restrict); // To avoid cyclic dependency issue
         }
     }

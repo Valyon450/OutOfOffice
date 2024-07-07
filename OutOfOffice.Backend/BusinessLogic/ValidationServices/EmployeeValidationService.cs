@@ -32,12 +32,22 @@ namespace BusinessLogic.ValidationServices
                 validationResult.Errors.Add(new ValidationFailure(nameof(request.PeoplePartnerId), "PeoplePartner must exist and have a position of 'HR Manager'"));
             }
 
+            if (!await ProjectIdExists(request.ProjectId))
+            {
+                validationResult.Errors.Add(new ValidationFailure(nameof(request.ProjectId), "ProjectId does not exist"));
+            }
+
             return validationResult;
         }
 
         private async Task<bool> PeoplePartnerIsHrManager(int id)
         {
             return await _context.Employee.AnyAsync(e => e.Id == id && e.Position == "HR Manager");
+        }
+
+        private async Task<bool> ProjectIdExists(int id)
+        {
+            return await _context.Project.AnyAsync(p => p.Id == id);
         }
     }
 }

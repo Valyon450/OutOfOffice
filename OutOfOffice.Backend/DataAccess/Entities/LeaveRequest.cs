@@ -10,6 +10,6 @@
         public string? Comment { get; set; }
         public string Status { get; set; } = "New";
 
-        public Employee? Employee { get; set; }
+        public required Employee Employee { get; set; }
     }
 }

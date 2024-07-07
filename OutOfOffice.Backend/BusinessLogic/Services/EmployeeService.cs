@@ -78,11 +78,13 @@ namespace BusinessLogic.Services
 
                 await _context.SaveChangesAsync(cancellationToken);
 
+                _logger.LogInformation($"Employee with Id: {employee.Id} has been created successfully.");
+
                 return employee.Id;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while creating an employee");
+                _logger.LogError(ex, "Error occurred while creating an employee.");
                 throw;
             }
         }
@@ -109,6 +111,8 @@ namespace BusinessLogic.Services
                 _mapper.Map(request, existingEmployee);
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Employee with Id: {id} has been updated successfully.");
             }
             catch (Exception ex)
             {
@@ -117,7 +121,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task DeactivateEmployeeAsync(int id, CancellationToken cancellationToken)
+        public async Task ActivateOrDeactivateEmployeeAsync(int id, CancellationToken cancellationToken)
         {
             try
             {
@@ -128,12 +132,53 @@ namespace BusinessLogic.Services
                     throw new Exception($"Employee with Id: {id} not found.");
                 }
 
-                employee.Status = "Inactive"; // Assuming "Inactive" is a valid status
+                if(employee.Status == "Active")
+                {
+                    employee.Status = "Inactive";
+                }
+                else
+                {
+                    employee.Status = "Active";
+                }
+
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Employee with Id: {id} get activation change successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while deactivating employee with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while deactivating employee with Id: {id}.");
+                throw;
+            }
+        }
+
+        public async Task AssignEmployeeToProjectAsync(int id, int projectId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var employee = await _context.Employee.FindAsync(new object[] { id }, cancellationToken);
+
+                if (employee == null)
+                {
+                    throw new Exception($"Employee with Id: {id} not found.");
+                }
+
+                var project = await _context.Project.FindAsync(new object[] { projectId }, cancellationToken);
+
+                if (project == null)
+                {
+                    throw new Exception($"Project with Id: {projectId} not found.");
+                }
+
+                employee.ProjectId = projectId;
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation($"Employee with Id: {id} assigned to Project with Id: {projectId} successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error occurred while assigning employee with Id: {id} to Project with Id: {projectId}.");
                 throw;
             }
         }
@@ -152,10 +197,11 @@ namespace BusinessLogic.Services
                 _context.Employee.Remove(employee);
                 await _context.SaveChangesAsync(cancellationToken);
 
+                _logger.LogInformation($"Employee with Id: {id} has been deleted successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurred while deleting employee with Id: {id}");
+                _logger.LogError(ex, $"Error occurred while deleting employee with Id: {id}.");
                 throw;
             }
         }
@@ -172,7 +218,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while searching for employees");
+                _logger.LogError(ex, "Error occurred while searching for employees.");
                 return null;
             }
         }
@@ -194,7 +240,7 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while filtering employees");
+                _logger.LogError(ex, "Error occurred while filtering employees.");
                 return null;
             }
         }

@@ -1,6 +1,4 @@
-﻿using DataAccess.Entities;
-
-namespace BusinessLogic.DTOs
+﻿namespace BusinessLogic.DTOs
 {
     public class ProjectDTO
     {
@@ -11,7 +9,5 @@ namespace BusinessLogic.DTOs
         public required int ProjectManagerId { get; set; }
         public string? Comment { get; set; }
         public required string Status { get; set; }
-
-        public required Employee ProjectManager { get; set; }
     }
 }

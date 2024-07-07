@@ -27,16 +27,20 @@ namespace BusinessLogic.Validators
             RuleFor(x => x.StartDate)
                 .NotEmpty()
                 .WithMessage("StartDate is required")
+                .GreaterThanOrEqualTo(DateTime.Today)
+                .WithMessage("StartDate must be in the future")
                 .LessThan(x => x.EndDate)
                 .WithMessage("StartDate must be earlier than EndDate");
 
             RuleFor(x => x.EndDate)
                 .NotEmpty()
-                .WithMessage("EndDate is required");
+                .WithMessage("EndDate is required")
+                .GreaterThanOrEqualTo(DateTime.Today)
+                .WithMessage("EndDate must be in the future");
 
             RuleFor(x => x.Status)
-                .Must(status => new[] { "New", "Approved", "Rejected" }.Contains(status))
-                .WithMessage("Status must be either 'New', 'Approved' or 'Rejected'");
+                .Must(status => new[] { "New", "Submitted", "Canceled", "Approved", "Rejected" }.Contains(status))
+                .WithMessage("Status must be either 'New', 'Submitted', 'Canceled', 'Approved' or 'Rejected'");
         }
     }
 }

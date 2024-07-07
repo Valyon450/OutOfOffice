@@ -47,7 +47,7 @@ namespace BusinessLogic.ValidationServices
 
         private async Task<bool> LeaveRequestIdExists(int id)
         {
-            return await _context.LeaveRequest.AnyAsync(e => e.Id == id);
+            return await _context.LeaveRequest.AnyAsync(lr => lr.Id == id);
         }
     }
 }

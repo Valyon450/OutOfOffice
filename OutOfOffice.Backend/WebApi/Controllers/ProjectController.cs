@@ -78,11 +78,11 @@ namespace WebApi.Controllers
         }
 
         [HttpPatch("{id}")]
-        public async Task<IActionResult> DeactivateProject(int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> ActivateOrDeactivateProject(int id, CancellationToken cancellationToken)
         {
             try
             {
-                await _projectService.DeactivateProjectAsync(id, cancellationToken);
+                await _projectService.ActivateOrDeactivateProjectAsync(id, cancellationToken);
 
                 return NoContent();
             }

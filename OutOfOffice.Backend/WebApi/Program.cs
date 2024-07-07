@@ -1,3 +1,4 @@
+using DataAccess;
 using Microsoft.OpenApi.Models;
 using WebApi.DI;
 
@@ -40,5 +41,11 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.UseCors("AllowAnyOrigin");
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<OutOfOfficeDbContext>();
+    DbInitializer.Initialize(context);
+}
 
 app.Run();

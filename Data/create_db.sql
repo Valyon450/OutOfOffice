@@ -1,10 +1,12 @@
 CREATE DATABASE OutOfOffice
-ON (NAME = OutOfOffice_data, FILENAME = 'C:\SQL Test\OutOfOffice.mdf')
+ON (NAME = OutOfOffice_data, FILENAME = 'C:\SQL Databases\OutOfOffice.mdf')
 LOG 
-ON (NAME = OutOfOffice_log, FILENAME = 'C:\SQL Test\OutOfOffice.ldf');
+ON (NAME = OutOfOffice_log, FILENAME = 'C:\SQL Databases\OutOfOffice.ldf');
 GO
 
 USE OutOfOffice;
+
+-- DROP DATABASE OutOfOffice;
 
 CREATE TABLE Employee (
     Id INT PRIMARY KEY IDENTITY(1,1),
@@ -13,9 +15,21 @@ CREATE TABLE Employee (
     Position NVARCHAR(255) NOT NULL,
     Status NVARCHAR(50) NOT NULL,
     PeoplePartnerId INT,
+	ProjectId INT,
     OutOfOfficeBalance INT NOT NULL,
     Photo VARBINARY(MAX),
     FOREIGN KEY (PeoplePartnerId) REFERENCES Employee(Id)
+);
+
+CREATE TABLE Project (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    ProjectType NVARCHAR(255) NOT NULL,
+    StartDate DATE NOT NULL,
+    EndDate DATE,
+	ProjectManagerId INT,
+    Comment NVARCHAR(MAX),
+    Status NVARCHAR(50) NOT NULL,
+	FOREIGN KEY (ProjectManagerId) REFERENCES Employee(Id)
 );
 
 CREATE TABLE LeaveRequest (
@@ -29,7 +43,7 @@ CREATE TABLE LeaveRequest (
     FOREIGN KEY (EmployeeId) REFERENCES Employee(Id)
 );
 
-CREATE TABLE ApprovalRequests (
+CREATE TABLE ApprovalRequest (
     Id INT PRIMARY KEY IDENTITY(1,1),
     ApproverId INT,
     LeaveRequestId INT,
@@ -37,15 +51,4 @@ CREATE TABLE ApprovalRequests (
     Comment NVARCHAR(MAX),
     FOREIGN KEY (ApproverId) REFERENCES Employee(Id),
     FOREIGN KEY (LeaveRequestId) REFERENCES LeaveRequest(Id)
-);
-
-CREATE TABLE Project (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    ProjectType NVARCHAR(255) NOT NULL,
-    StartDate DATE NOT NULL,
-    EndDate DATE,
-    ProjectManagerId INT,
-    Comment NVARCHAR(MAX),
-    Status NVARCHAR(50) NOT NULL,
-    FOREIGN KEY (ProjectManagerId) REFERENCES Employee(Id)
 );
