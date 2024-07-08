@@ -2,6 +2,7 @@ using DataAccess;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
 using WebApi.DI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,9 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureDependency(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "OutOfOffice REST API", Version = "v1" });
+builder.Services.AddSwaggerGen(config =>
+{    
+    var xmFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmPath = Path.Combine(AppContext.BaseDirectory, xmFile);
+    config.SwaggerDoc("v1", new OpenApiInfo { Title = "OutOfOffice REST API", Version = "v1" });
+    config.IncludeXmlComments(xmPath);
 });
 
 // Configure Authentication
@@ -51,9 +55,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    app.UseSwaggerUI(config =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "OutOfOffice REST API V1");
+        config.RoutePrefix = string.Empty;
+        config.SwaggerEndpoint("/swagger/v1/swagger.json", "OutOfOffice REST API V1");
     });
 }
 
