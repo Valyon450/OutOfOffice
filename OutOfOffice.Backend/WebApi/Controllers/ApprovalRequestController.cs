@@ -2,12 +2,14 @@
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
 using BusinessLogic.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Require authentication for all actions in this controller
     public class ApprovalRequestController : ControllerBase
     {
         private readonly IApprovalRequestService _approvalRequestService;
@@ -18,6 +20,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<ApprovalRequestDTO>>> GetApprovalRequests(CancellationToken cancellationToken)
         {
             var approvalRequests = await _approvalRequestService.GetApprovalRequestsAsync(cancellationToken);
@@ -33,6 +36,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<ApprovalRequestDTO>> GetApprovalRequestById(int id, CancellationToken cancellationToken)
         {
             try
@@ -48,6 +52,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<IActionResult> CreateApprovalRequest([FromBody] CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
         {
             try
@@ -63,6 +68,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrator")] // Administrators can access this
         public async Task<IActionResult> UpdateApprovalRequest(int id, [FromBody] CreateOrUpdateApprovalRequest request, CancellationToken cancellationToken)
         {
             try
@@ -78,6 +84,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPatch("{id}/approve")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<IActionResult> ApproveRequest(int id, CancellationToken cancellationToken)
         {
             try
@@ -93,6 +100,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPatch("{id}/reject")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<IActionResult> RejectRequest(int id, [FromBody] string rejectionReason, CancellationToken cancellationToken)
         {
             try
@@ -108,6 +116,7 @@ namespace WebApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")] // Administrators can access this
         public async Task<IActionResult> DeleteApprovalRequest(int id, CancellationToken cancellationToken)
         {
             try
@@ -123,6 +132,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("search")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<ApprovalRequestDTO>>> SearchApprovalRequests([FromQuery] string searchTerm, CancellationToken cancellationToken)
         {
             var approvalRequests = await _approvalRequestService.SearchApprovalRequestsAsync(searchTerm, cancellationToken);
@@ -138,6 +148,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("filter")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<ApprovalRequestDTO>>> FilterApprovalRequests([FromBody] FilterOptions options, CancellationToken cancellationToken)
         {
             var approvalRequests = await _approvalRequestService.FilterApprovalRequestsAsync(options, cancellationToken);

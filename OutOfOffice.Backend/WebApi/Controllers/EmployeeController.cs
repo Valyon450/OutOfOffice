@@ -2,12 +2,14 @@
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
 using BusinessLogic.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Require authentication for all actions in this controller
     public class EmployeeController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
@@ -18,6 +20,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<EmployeeDTO>>> GetEmployees(CancellationToken cancellationToken)
         {
             var employees = await _employeeService.GetEmployeesAsync(cancellationToken);
@@ -33,6 +36,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<EmployeeDTO>> GetEmployeeById(int id, CancellationToken cancellationToken)
         {
             try
@@ -48,6 +52,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "HR Manager, Administrator")] // HR Managers and Administrators can access this
         public async Task<IActionResult> CreateEmployee([FromBody] CreateOrUpdateEmployee request, CancellationToken cancellationToken)
         {
             try
@@ -63,6 +68,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "HR Manager, Administrator")] // HR Managers and Administrators can access this
         public async Task<IActionResult> UpdateEmployee(int id, [FromBody] CreateOrUpdateEmployee request, CancellationToken cancellationToken)
         {
             try
@@ -78,6 +84,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPatch("{id}/activation")]
+        [Authorize(Roles = "HR Manager, Administrator")] // HR Managers and Administrators can access this
         public async Task<IActionResult> ActivateOrDeactivateEmployee(int id, CancellationToken cancellationToken)
         {
             try
@@ -93,6 +100,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPatch("{id}/project")]
+        [Authorize(Roles = "Project Manager, Administrator")] // Project Managers and Administrators can access this
         public async Task<IActionResult> AssignEmployeeToProject(int id, int projectId, CancellationToken cancellationToken)
         {
             try
@@ -108,6 +116,7 @@ namespace WebApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")] // Administrators can access this
         public async Task<IActionResult> DeleteEmployee(int id, CancellationToken cancellationToken)
         {
             try
@@ -123,6 +132,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("search")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<EmployeeDTO>>> SearchEmployees([FromQuery] string searchTerm, CancellationToken cancellationToken)
         {
             var employees = await _employeeService.SearchEmployeesAsync(searchTerm, cancellationToken);
@@ -138,6 +148,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("filter")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<EmployeeDTO>>> FilterEmployees([FromBody] FilterOptions options, CancellationToken cancellationToken)
         {
             var employees = await _employeeService.FilterEmployeesAsync(options, cancellationToken);

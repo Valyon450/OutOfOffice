@@ -2,12 +2,14 @@
 using BusinessLogic.Options;
 using BusinessLogic.Requests;
 using BusinessLogic.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Require authentication for all actions in this controller
     public class LeaveRequestController : ControllerBase
     {
         private readonly ILeaveRequestService _leaveRequestService;
@@ -18,6 +20,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<LeaveRequestDTO>>> GetLeaveRequests(CancellationToken cancellationToken)
         {
             var leaveRequests = await _leaveRequestService.GetLeaveRequestsAsync(cancellationToken);
@@ -93,6 +96,7 @@ namespace WebApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")] // Administrators can access this
         public async Task<IActionResult> DeleteLeaveRequest(int id, CancellationToken cancellationToken)
         {
             try
@@ -108,6 +112,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("search")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<LeaveRequestDTO>>> SearchLeaveRequests([FromQuery] string searchTerm, CancellationToken cancellationToken)
         {
             var leaveRequests = await _leaveRequestService.SearchLeaveRequestsAsync(searchTerm, cancellationToken);
@@ -123,6 +128,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("filter")]
+        [Authorize(Roles = "HR Manager, Project Manager, Administrator")] // HR Managers, Project Managers and Administrators can access this
         public async Task<ActionResult<List<LeaveRequestDTO>>> FilterLeaveRequests([FromBody] FilterOptions options, CancellationToken cancellationToken)
         {
             var leaveRequests = await _leaveRequestService.FilterLeaveRequestsAsync(options, cancellationToken);
