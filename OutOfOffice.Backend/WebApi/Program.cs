@@ -1,8 +1,10 @@
 using DataAccess;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.OpenApi.Models;
-using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
+using WebApi;
 using WebApi.DI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,23 +17,30 @@ builder.Services.AddSwaggerGen(config =>
 {    
     var xmFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmPath = Path.Combine(AppContext.BaseDirectory, xmFile);
-    config.SwaggerDoc("v1", new OpenApiInfo { Title = "OutOfOffice REST API", Version = "v1" });
     config.IncludeXmlComments(xmPath);
 });
 
 // Configure Authentication
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-builder.Services.AddAuthentication(options =>
+builder.Services.AddAuthentication(config =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    config.DefaultAuthenticateScheme =
+        JwtBearerDefaults.AuthenticationScheme;
+    config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
-{
-    options.Authority = "https://localhost:7239"; // URL IdentityServer
-    options.Audience = "OutOfOfficeWebAPI";
-    options.RequireHttpsMetadata = false;
-});
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.Authority = "https://localhost:44386/";
+                    options.Audience = "NotesWebAPI";
+                    options.RequireHttpsMetadata = false;
+                });
+
+builder.Services.AddVersionedApiExplorer(options =>
+    options.GroupNameFormat = "'v'VVV");
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>,
+        ConfigureSwaggerOptions>();
+builder.Services.AddApiVersioning();
+
+builder.Services.AddHttpContextAccessor();
 
 // Add Authorization with policies for roles
 builder.Services.AddAuthorization(options =>
@@ -57,18 +66,29 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(config =>
     {
-        config.RoutePrefix = string.Empty;
-        config.SwaggerEndpoint("/swagger/v1/swagger.json", "OutOfOffice REST API V1");
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            config.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant());
+            config.RoutePrefix = string.Empty;
+        }
     });
 }
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+
 app.UseAuthorization();
+
+app.UseApiVersioning();
 
 app.MapControllers();
 
-app.UseCors("AllowAnyOrigin");
+app.UseCors("AllowAll");
 
 using (var scope = app.Services.CreateScope())
 {

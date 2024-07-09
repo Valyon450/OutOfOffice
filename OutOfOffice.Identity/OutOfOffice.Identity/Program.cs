@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AuthDbContext>(options =>
 {
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(config =>
@@ -32,6 +32,8 @@ builder.Services.AddIdentityServer()
 builder.Services.ConfigureApplicationCookie(config =>
 {
     config.Cookie.Name = "OutOfOffice.Identity.Cookie";
+    config.Cookie.HttpOnly = true;
+    config.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     config.LoginPath = "/Auth/Login";
     config.LogoutPath = "/Auth/Logout";
 });
